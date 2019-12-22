@@ -4,5 +4,4 @@ Se distribuye bajo licencia CC-BY-NC-SA. Puedes acceder al código fuente en est
 
 Pablo Felip Monferrer
 
-@pfelipm
-
+<a href="https://twitter.com/pfelipm">@pfelipm</a>
