@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+  <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+  
+  <head>
+    <base target="_top">
+    <script>   
+           
+      // Vector de ID de alumnos que tienen nota
+      var listaIDAlumnosNota = [];
+      
+      // Comienza la fiesta, pedir datos de la hoja al servidor y montar interfaz HTML
+      function inicio() {
+        
+        // Mensaje para impacientes
+        document.getElementById('mensajeEstado').innerHTML = '<p>Recuperando datos, solo se mostrarán alumnos con calificación...';
+        
+        // Llamada asíncrona a función GAS que devuelve datos con callback a mostrarNotas()
+        google.script.run.withSuccessHandler(mostrarNotas).obtenerDatosHoja();   
+      }    
+      
+      // Montar visualización de tabla para seleccionar alumnos y escribir comentarios en panel HTML
+      function mostrarNotas(datosHoja){
+      
+        // Construir tabla de calificaciones con casillas de verificación y espacio para comentarios
+        // Primero la cabecera
+        var html = '<table><tr><th></th><th>Alumno</th><th>Nota</th><th>Comentario</th>';
+        
+        // Ahora las filas correspondientes a cada alumno
+        for (var i=0; i<datosHoja.length; i++) {
+          
+          // No incluir alumnos sin calificación
+          if (datosHoja[i][1] != '') {
+            html += '<tr><td><input type="checkbox" id="' + 'chk_alumno' + i +'" value="' + datosHoja[i][0] + '" checked></td>';
+            html += '<td>' + datosHoja[i][0] + '</td><td>' + datosHoja[i][1] + '</td>';
+            html += '<td><input type="text" size="70" id="' + 'txt_alumno' + i + '"' +'</td></tr>';
+            
+            // Anotamos los índices de los alumnos que sí tienen nota
+            listaIDAlumnosNota.push(i);
+          }
+        }        
+        html += '</table>'; 
+        
+        // Contemplar la posibilidad de que ninguno de los alumnos tenga calificación
+        if (listaIDAlumnosNota.length == 0) {
+          document.getElementById('mensajeEstado').innerHTML = '<p>¡Ningún alumno dispone de calificación, revisa las pestañas de EVALUACIÓN!'
+          document.getElementById('mensajeEstado').style.color = 'red';     
+        }
+        else {
+          
+          // Seguimos, mostrar instrucciones para el usuario
+          document.getElementById('mensajeEstado').innerHTML = '<p>Selecciona destinatarios, introduce comentarios y haz clic en <b>Enviar</b>.';
+       
+          // Mostrar botones selectores
+          document.getElementById('botones_selectores').innerHTML = '<button type="button" id="btn_todos" onClick="btn_todos_clic()">Todos</button>'+
+            ' <button type="button" id="btn_ninguno" onClick="btn_ninguno_clic()">Ninguno</button><br><br>';
+            
+          // Mostrar tabla de notas resultado del proceso
+          document.getElementById('listadoAlumnos').innerHTML = html;
+        
+          // Mostrar botón de envío
+           document.getElementById('boton_confirmar').innerHTML = '<button type="button" class="action" id="btn_confirmar" onClick="btn_enviar_clic()">Enviar 🚀</button>';
+         }
+      }      
+      
+      // Desmarcar todos los alumnos de la lista
+      function btn_ninguno_clic(){
+      
+        for (var i in listaIDAlumnosNota) {
+          document.getElementById('chk_alumno'+listaIDAlumnosNota[i]).checked = false;} 
+     }
+      
+      // Marcar todos los alumnos de la lista
+      function btn_todos_clic(){
+      
+        for (var i in listaIDAlumnosNota) {
+          document.getElementById('chk_alumno'+listaIDAlumnosNota[i]).checked = true;}
+      }    
+      
+      // Devolver el control a scripts GAS con datos necesarios y terminar
+      function btn_enviar_clic() {
+              
+        // Devolvemos a GAS en servidor una lista de objetos con calificación 
+        // cuyas propiedades son el ID del alumno (cardinal) y sus comentarios
+        
+        var alumnosComentarios = [];
+        
+        // Recorremos la lista de alumnos de la tabla
+        for (var i in listaIDAlumnosNota) {
+        
+          // Identificamos los seleccionados
+          if (document.getElementById('chk_alumno'+listaIDAlumnosNota[i]).checked == true) {
+          
+            // Añadimos objeto (ID, comentarios) a la lista
+            alumnosComentarios.push({ID:listaIDAlumnosNota[i],comentario:document.getElementById('txt_alumno'+listaIDAlumnosNota[i]).value});
+          }
+        }
+        
+        // Se invoca función de envío de emails y se cierra panel HTML (ejecución asíncrona)
+        google.script.run.enviarEmails(alumnosComentarios);
+        google.script.host.close(); 
+      }   
+    </script>
+    
+    <style>
+      .tabla {
+         height: 400px;
+         overflow-y: auto;
+      }
+      
+      th {
+        text-align:center;
+      }
+      td {
+        padding: 5px;
+      }
+    </style>
+    
+  </head>
+  
+  <body onload='inicio()'>
+    <div id='mensajeEstado'></div>
+    <div id='botones_selectores'></div>
+    <div class='tabla' id = 'listadoAlumnos'></div><br>
+    <div id='boton_confirmar'></div>
+  </body>
+</html>
+
+
